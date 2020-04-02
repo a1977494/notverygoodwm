@@ -1,0 +1,2 @@
+# notverygoodwm
+notverygoodwm window manager 

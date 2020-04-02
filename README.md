@@ -1,2 +1,3 @@
-# notverygoodwm
-notverygoodwm window manager 
+# NotVeryGoodWM
+NotVeryGoodWM window manager
+

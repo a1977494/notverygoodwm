@@ -24,7 +24,7 @@ void wUnsetBorder (Display * d, Window w)
 void wfocus (Display * d, Window w)
 {
   XRaiseWindow(d, w);
-  //XSetInputFocus(d, w, RevertToPointerRoot, CurrentTime);
+  XSetInputFocus(d, w, RevertToPointerRoot, CurrentTime);
 
   // set border
   //  wSetBorder(d, w);
@@ -130,8 +130,8 @@ int main()
 	fflush(stdout);
 
 	// no need border only focus
-	XSetInputFocus(dpy, ev.xcrossing.window, RevertToPointerRoot, CurrentTime);
-	XRaiseWindow(dpy, ev.xcrossing.window);
+	//XSetInputFocus(dpy, ev.xcrossing.window, RevertToPointerRoot, CurrentTime);
+	//XRaiseWindow(dpy, ev.xcrossing.window);
 
 
 	
@@ -214,6 +214,11 @@ int main()
 	  memButtonPressKey = ev.xbutton.button;
 	  memButtonPressX = ev.xbutton.x_root;
 	  memButtonPressY = ev.xbutton.y_root;
+
+	  // no need border only focus
+	  XSetInputFocus(dpy, ev.xbutton.subwindow, RevertToPointerRoot, CurrentTime);
+	  XRaiseWindow(dpy, ev.xbutton.subwindow);
+
         }
       else if(ev.type == ButtonRelease)
 	{

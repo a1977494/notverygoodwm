@@ -6,6 +6,7 @@
 Window wprev = 0;
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define MAPLEN 256
 
 void wSetBorder (Display * d, Window w)
 {
@@ -32,9 +33,9 @@ void wfocus (Display * d, Window w)
   // unset border
   //if (wprev != 0 && wprev != w)
   //  {
-      // xwc.border_width = 0;
-      // XConfigureWindow(d, wprev, CWBorderWidth, &xwc);
-      // XSetWindowBorder(d, wprev, 0);
+  // xwc.border_width = 0;
+  // XConfigureWindow(d, wprev, CWBorderWidth, &xwc);
+  // XSetWindowBorder(d, wprev, 0);
   //}
   //wprev = w;
 }
@@ -62,9 +63,54 @@ void wshow (Display * d, Window w)
 }
 int catcher( Display *disp, XErrorEvent *xe )
 {
-        printf( "Something had happened, bruh.\n" );
-        return 0;
+  printf( "Something had happened, bruh.\n" );
+  return 0;
 }
+struct map {
+  Display * d;
+  Window w;
+  unsigned int key;
+  int show;
+};
+
+struct map map[MAPLEN] = {0};
+void mapUnmap (Display * d, Window w, unsigned int k)
+{
+  for (int i = 0; i < MAPLEN; i++) {
+    if (map[i].key == k) {
+      if (map[i].show)
+	{
+	  whide(d, map[i].w);
+	  map[i].show = 0;
+	}
+      else
+	{
+	  wshow(d, map[i].w);
+	  wfocus(d, map[i].w);
+	  map[i].show = 1;
+	}
+      return;
+    }
+  }
+  for (int i = 0; i < MAPLEN; i++) {
+    if(map[i].key == 0) {
+      whide(d, w);
+      map[i].key = k;
+      map[i].d = d;
+      map[i].w = w;
+      map[i].show = 0;
+      break;
+    }
+  }
+}
+/*
+  struct stateWindow
+  {
+  Window w;
+  int number;
+  struct list_head node;
+  };
+*/
 int main()
 {
   Display * dpy;
@@ -109,8 +155,8 @@ int main()
 
       if(ev.type == CreateNotify && ev.xcreatewindow.parent == root && ev.xcreatewindow.window != None) {
 	//if(ev.type == CreateNotify && ev.xcreatewindow.window != None) {
-      //if(ev.type == CreateNotify && ev.xcreatewindow.override_redirect == False && ev.xcreatewindow.parent == root) {
-      //if(ev.type == CreateNotify) {
+	//if(ev.type == CreateNotify && ev.xcreatewindow.override_redirect == False && ev.xcreatewindow.parent == root) {
+	//if(ev.type == CreateNotify) {
 	XSelectInput(dpy, ev.xcreatewindow.window, SubstructureNotifyMask | EnterWindowMask | LeaveWindowMask);
 	printf("create\n");
 	fflush(stdout);
@@ -159,45 +205,60 @@ int main()
 	}*/
       
       if(ev.type == KeyPress) {
-
 	switch (ev.xkey.keycode) {
-	case 33: // p = programm
+	case 40: // d = dmenu
 	  system("dmenu_run &");
-	  break;
-	case 26: // e = emacs
-	  system("emacs &");
 	  break;
 	case 54: // c = console
 	  system("sakura &");
 	  break;
-	case 56: //b = browser
+	default:
+	  mapUnmap(dpy, ev.xkey.subwindow, ev.xkey.keycode);
+	}
+	/*
+	  if (ev.xkey.state & ShiftMask) {
+	  //ShiftMask
+	  //show hide window
+	  mapUnmap(dpy, ev.xkey.subwindow, ev.xkey.keycode);
+	  } else {
+	  switch (ev.xkey.keycode) {
+	  case 33: // p = programm
+	  system("dmenu_run &");
+	  break;
+	  case 26: // e = emacs
+	  system("emacs &");
+	  break;
+	  case 54: // c = console
+	  system("sakura &");
+	  break;
+	  case 56: //b = browser
 	  system("chromium &");
 	  break;
-	case 43: // h = hide
+	  case 43: // h = hide
 	  if(ev.xkey.subwindow != None && wtmp == 0) {
-	    wtmp = ev.xkey.subwindow;
-	    whide(dpy, wtmp);
+	  wtmp = ev.xkey.subwindow;
+	  whide(dpy, wtmp);
 	  }
 	  break;
-	case 39: // s = show
+	  case 39: // s = show
 	  if(wtmp != 0) {
-	    wshow(dpy, wtmp);
-	    wtmp = 0;
+	  wshow(dpy, wtmp);
+	  wtmp = 0;
 	  }
 	  break;
 	  
-	case 67: // F1 test func
+	  case 67: // F1 test func
 	  if(ev.xkey.subwindow != None) {
-	    XRaiseWindow(dpy, ev.xkey.subwindow);
-	    XSetInputFocus(dpy, ev.xkey.subwindow, RevertToPointerRoot, CurrentTime);
-	    xwc.border_width = 5;
-	    XConfigureWindow(dpy, ev.xkey.subwindow, CWBorderWidth, &xwc);
-	    XSetWindowBorder(dpy, ev.xkey.subwindow, 30000);
+	  XRaiseWindow(dpy, ev.xkey.subwindow);
+	  XSetInputFocus(dpy, ev.xkey.subwindow, RevertToPointerRoot, CurrentTime);
+	  xwc.border_width = 5;
+	  XConfigureWindow(dpy, ev.xkey.subwindow, CWBorderWidth, &xwc);
+	  XSetWindowBorder(dpy, ev.xkey.subwindow, 30000);
 	  }
 	  break;
-	default:
-	  break;
-	}
+	  }
+	  }
+	*/
       }
       else if(ev.type == ButtonPress && ev.xbutton.subwindow != None && ev.xbutton.button == 5)
 	scroll(dpy,ev);

@@ -264,9 +264,14 @@ int main()
 	case 40: // d = dmenu
 	  system("dmenu_run &");
 	  break;
-	case 54: // c = console
+	case 36: // return
 	  system("sakura &");
 	  break;
+	  /*
+	    case 54: // c = console
+	    system("sakura &");
+	    break;
+	  */
 	case 114: // right
 	  expandRight(dpy, root, ev.xkey);
 	  break;

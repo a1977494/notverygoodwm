@@ -60,6 +60,7 @@ void wshow (Display * d, Window w)
 {
   XMapWindow(d, w);
   XFlush(d);
+  wfocus(d, w);
 }
 int catcher( Display *disp, XErrorEvent *xe )
 {
@@ -74,7 +75,28 @@ struct map {
 };
 
 struct map map[MAPLEN] = {0};
-void mapUnmap (Display * d, Window w, unsigned int k)
+void mapHideAdd (Display * d, Window w, unsigned int k)
+{
+  // if this key bind to window then show him
+  for (int i = 0; i < MAPLEN; i++) {
+    if (map[i].key == k) {
+      if (map[i].show == 0)
+	wshow(d, map[i].w);
+      map[i].key = 0;
+    }
+  }
+  for (int i = 0; i < MAPLEN; i++) {
+    if(map[i].key == 0) {
+      map[i].key = k;
+      map[i].d = d;
+      map[i].w = w;
+      map[i].show = 0;
+      whide(d, w);
+      return;
+    }
+  }
+}
+void mapHideToggle (Display * d, Window w, unsigned int k)
 {
   for (int i = 0; i < MAPLEN; i++) {
     if (map[i].key == k) {
@@ -86,23 +108,59 @@ void mapUnmap (Display * d, Window w, unsigned int k)
       else
 	{
 	  wshow(d, map[i].w);
-	  wfocus(d, map[i].w);
 	  map[i].show = 1;
 	}
       return;
     }
   }
-  for (int i = 0; i < MAPLEN; i++) {
-    if(map[i].key == 0) {
-      whide(d, w);
-      map[i].key = k;
-      map[i].d = d;
-      map[i].w = w;
-      map[i].show = 0;
-      break;
-    }
-  }
 }
+
+// EXPAND WINDOW
+void expandRight (Display * d, Window root, XKeyEvent xke)
+{
+  XWindowAttributes attrroot, attr;
+  XGetWindowAttributes(d, root, &attrroot);
+  XGetWindowAttributes(d, xke.subwindow, &attr);
+  XMoveResizeWindow(d, xke.subwindow,
+		    attr.x,
+		    attr.y,
+		    attrroot.width - attr.x,
+		    attr.height);
+}
+void expandLeft (Display * d, Window root, XKeyEvent xke)
+{
+  XWindowAttributes attrroot, attr;
+  XGetWindowAttributes(d, root, &attrroot);
+  XGetWindowAttributes(d, xke.subwindow, &attr);
+  XMoveResizeWindow(d, xke.subwindow,
+		    attrroot.x,
+		    attr.y,
+		    attr.width + attr.x,
+		    attr.height);
+}
+void expandUp (Display * d, Window root, XKeyEvent xke)
+{
+  XWindowAttributes attrroot, attr;
+  XGetWindowAttributes(d, root, &attrroot);
+  XGetWindowAttributes(d, xke.subwindow, &attr);
+  XMoveResizeWindow(d, xke.subwindow,
+		    attr.x,
+		    attrroot.y,
+		    attr.width,
+		    attr.height + attr.y);
+}
+void expandDown (Display * d, Window root, XKeyEvent xke)
+{
+  XWindowAttributes attrroot, attr;
+  XGetWindowAttributes(d, root, &attrroot);
+  XGetWindowAttributes(d, xke.subwindow, &attr);
+  XMoveResizeWindow(d, xke.subwindow,
+		    attr.x,
+		    attr.y,
+		    attr.width,
+		    attrroot.height - attr.y);
+}
+
 /*
   struct stateWindow
   {
@@ -127,11 +185,10 @@ int main()
   // border window
   Window borderNow = 0;
   
-  // hide window
-  //  Window wls[10];
-  Window wtmp = 0;
-  
+  // init X
   if(!(dpy = XOpenDisplay(0x0))) return 1;
+
+  // ignore errors
   XSetErrorHandler( catcher );
   
 
@@ -176,10 +233,8 @@ int main()
 	fflush(stdout);
 
 	// no need border only focus
-	//XSetInputFocus(dpy, ev.xcrossing.window, RevertToPointerRoot, CurrentTime);
+	XSetInputFocus(dpy, ev.xcrossing.window, RevertToPointerRoot, CurrentTime);
 	//XRaiseWindow(dpy, ev.xcrossing.window);
-
-
 	
 	//wSetBorder(dpy, ev.xcrossing.window);
 	//if (borderNow != 0)
@@ -212,8 +267,26 @@ int main()
 	case 54: // c = console
 	  system("sakura &");
 	  break;
+	case 114: // right
+	  expandRight(dpy, root, ev.xkey);
+	  break;
+	case 111: // up
+	  expandUp(dpy, root, ev.xkey);
+	  break;
+	case 113: // left
+	  expandLeft(dpy, root, ev.xkey);
+	  break;
+	case 116: // down
+	  expandDown(dpy, root, ev.xkey);
+	  break;
 	default:
-	  mapUnmap(dpy, ev.xkey.subwindow, ev.xkey.keycode);
+	  if(ev.xkey.state & ShiftMask) {
+	    if (ev.xkey.subwindow != None) {
+	      mapHideAdd(dpy, ev.xkey.subwindow, ev.xkey.keycode);
+	    }
+	  } else {
+	    mapHideToggle(dpy, ev.xkey.subwindow, ev.xkey.keycode);
+	  }
 	}
 	/*
 	  if (ev.xkey.state & ShiftMask) {

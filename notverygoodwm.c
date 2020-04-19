@@ -7,6 +7,7 @@ Window wprev = 0;
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MAPLEN 256
+#define BARSIZE 24
 
 void wSetBorder (Display * d, Window w)
 {
@@ -124,7 +125,7 @@ void expandRight (Display * d, Window root, XKeyEvent xke)
   XMoveResizeWindow(d, xke.subwindow,
 		    attr.x,
 		    attr.y,
-		    attrroot.width - attr.x,
+		    attrroot.width - attr.x - BARSIZE,
 		    attr.height);
 }
 void expandLeft (Display * d, Window root, XKeyEvent xke)
